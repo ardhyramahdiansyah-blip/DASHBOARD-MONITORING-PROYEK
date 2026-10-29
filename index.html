@@ -1,17 +1,1341 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard Monitoring Proyek Konstruksi</title>
-    <!-- Google Fonts Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  </head>
-  <body class="bg-slate-50 text-slate-800 antialiased selection:bg-blue-600 selection:text-white">
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Monitoring Proyek Konstruksi</title>
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            navy: {
+              50: '#f0f4f9',
+              100: '#dde6f2',
+              200: '#c0d1e7',
+              700: '#264876',
+              800: '#1d3455',
+              900: '#0f1d31',
+              950: '#080f1a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Chart.js via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Lucide Icons via CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* Styling scrollbar halus */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    
+    @media print {
+      body * { visibility: hidden; }
+      #printable-area, #printable-area * { visibility: visible; }
+      #printable-area { position: absolute; left: 0; top: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-blue-600 selection:text-white flex min-h-screen">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 text-slate-300 flex flex-col transition-all duration-300 lg:static lg:translate-x-0 -translate-x-full">
+    <!-- Header Brand -->
+    <div class="h-16 px-4 flex items-center justify-between border-b border-slate-800">
+      <div class="flex items-center gap-3 overflow-hidden">
+        <div class="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/30 text-white">
+          <i data-lucide="hard-hat" class="w-5 h-5"></i>
+        </div>
+        <div class="leading-tight truncate">
+          <span class="font-black text-sm tracking-wide text-white block">MONITORING PROYEK</span>
+          <span class="text-[10px] text-blue-400 font-bold tracking-wider uppercase">Teknik Sipil & Konstruksi</span>
+        </div>
+      </div>
+      <button onclick="toggleMobileSidebar()" class="lg:hidden p-1 text-slate-400 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <!-- 10 Menu Navigasi Utama -->
+    <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1 text-xs font-semibold">
+      <button onclick="switchView('dashboard')" id="nav-dashboard" class="nav-btn active w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-white bg-blue-600 shadow-md shadow-blue-600/30">
+        <i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0"></i>
+        <span class="truncate">Dashboard Utama</span>
+      </button>
+      <button onclick="switchView('proyek')" id="nav-proyek" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-slate-400 hover:text-white hover:bg-slate-800/80">
+        <i data-lucide="briefcase" class="w-4 h-4 shrink-0"></i>
+        <span class="truncate">Data Proyek</span>
+      </button>
+      <button onclick="switchView('progres')" id="nav-progres" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-slate-400 hover:text-white hover:bg-slate-800/80">
+        <i data-lucide="trending-up" class="w-4 h-4 shrink-0"></i>
+        <span class="truncate">Monitoring Progres (WBS)</span>
+      </button>
+      <button onclick="switchView('jadwal')" id="nav-jadwal" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-slate-400 hover:text-white hover:bg-slate-800/80">
+        <i data-lucide="calendar-days" class="w-4 h-4 shrink-0"></i>
+        <span class="truncate">Jadwal Proyek (Gantt)</span>
+      </button>
+      <button onclick="switchView('anggaran')" id="nav-anggaran" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-slate-400 hover:text-white hover:bg-slate-800/80">
+        <i data-lucide="wallet" class="w-4 h-4 shrink-0"></i>
+        <span class="truncate">Anggaran & Biaya (EVM)</span>
+      </button>
+      <button onclick="switchView('material')" id="nav-material" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-slate-400 hover:text-white hover:bg-slate-800/80">
+        <i data-lucide="package-check" class="w-4 h-4 shrink-0"></i>
+        <span class="truncate">Material & Peralatan</span>
+      </button>
+      <button onclick="switchView('mutu-k3')" id="nav-mutu-k3" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-slate-400 hover:text-white hover:bg-slate-800/80">
+        <i data-lucide="shield-alert" class="w-4 h-4 shrink-0"></i>
+        <span class="truncate">Mutu (QC) & K3</span>
+      </button>
+      <button onclick="switchView('kendala-risiko')" id="nav-kendala-risiko" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-slate-400 hover:text-white hover:bg-slate-800/80">
+        <i data-lucide="alert-octagon" class="w-4 h-4 shrink-0"></i>
+        <span class="truncate">Kendala & Matriks Risiko</span>
+      </button>
+      <button onclick="switchView('laporan')" id="nav-laporan" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-slate-400 hover:text-white hover:bg-slate-800/80">
+        <i data-lucide="file-spreadsheet" class="w-4 h-4 shrink-0"></i>
+        <span class="truncate">Laporan Proyek</span>
+      </button>
+      <button onclick="switchView('pengaturan')" id="nav-pengaturan" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-slate-400 hover:text-white hover:bg-slate-800/80">
+        <i data-lucide="sliders-horizontal" class="w-4 h-4 shrink-0"></i>
+        <span class="truncate">Pengguna & Pengaturan</span>
+      </button>
+    </nav>
+
+    <!-- Info Footer Sidebar -->
+    <div class="p-3 border-t border-slate-800 text-[11px] text-slate-400">
+      <div class="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50">
+        <div class="font-bold text-slate-200">Mode Sistem: Standalone</div>
+        <div class="text-[10px] text-slate-400 mt-0.5">Single-File GitHub Pages Ready</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Overlay Mobile -->
+  <div id="sidebar-overlay" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-30 hidden lg:hidden"></div>
+
+  <!-- ==================== MAIN CONTENT WRAPPER ==================== -->
+  <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+
+    <!-- HEADER TOP -->
+    <header class="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 lg:px-8 py-3 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <button onclick="toggleMobileSidebar()" class="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100">
+          <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+        <div>
+          <h1 id="page-title" class="text-base lg:text-lg font-bold text-slate-900 tracking-tight">Dashboard Utama</h1>
+          <p class="hidden sm:block text-[11px] text-slate-500 font-medium">Sistem Pengendalian Progres, Biaya, Mutu, dan K3 Terpadu</p>
+        </div>
+      </div>
+
+      <!-- Kanan: Pemilih Proyek, Peran Demo, Notifikasi, Avatar -->
+      <div class="flex items-center gap-2.5 sm:gap-3">
+        <!-- Pemilih Proyek Dropdown -->
+        <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 shadow-xs">
+          <i data-lucide="building-2" class="w-4 h-4 text-blue-600 shrink-0"></i>
+          <select id="project-selector" onchange="changeSelectedProject(this.value)" class="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer max-w-[130px] sm:max-w-[210px] truncate">
+            <option value="all">🏢 Semua Proyek (3)</option>
+            <option value="proj-01" selected>RSUD 5 Lantai Rawat Inap</option>
+            <option value="proj-02">Pelebaran Jalan 12 KM</option>
+            <option value="proj-03">Saluran Drainase Primer BWS</option>
+          </select>
+        </div>
+
+        <!-- Role Switcher Dropdown -->
+        <div class="hidden md:flex items-center gap-1.5 bg-blue-50 border border-blue-200 rounded-xl px-2.5 py-1.5 text-xs text-blue-900 font-semibold">
+          <i data-lucide="shield-check" class="w-4 h-4 text-blue-600"></i>
+          <select id="role-selector" onchange="changeUserRole(this.value)" class="bg-transparent focus:outline-none cursor-pointer">
+            <option value="Admin">Admin Sistem</option>
+            <option value="Project Manager">Project Manager</option>
+            <option value="Pelaksana Lapangan">Pelaksana Lapangan</option>
+            <option value="QS/Keuangan">QS / Keuangan</option>
+            <option value="QC/K3">QC / K3</option>
+            <option value="Owner">Owner (View Only)</option>
+          </select>
+        </div>
+
+        <!-- Notifikasi -->
+        <div class="relative">
+          <button onclick="toggleNotifPopup()" class="p-2 rounded-xl text-slate-600 hover:bg-slate-100 relative">
+            <i data-lucide="bell" class="w-5 h-5"></i>
+            <span class="absolute top-1.5 right-1.5 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">2</span>
+          </button>
+          <div id="notif-popup" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-slate-200 p-4 z-50 text-xs">
+            <div class="font-bold text-slate-900 border-b pb-2 mb-2">Pemberitahuan Proyek</div>
+            <div class="space-y-2">
+              <div class="p-2 bg-amber-50 rounded-lg text-amber-900">
+                <strong>Stok Menipis:</strong> Semen PCC sisa 180 sak (Batas min: 250 sak).
+              </div>
+              <div class="p-2 bg-rose-50 rounded-lg text-rose-900">
+                <strong>Pekerjaan Terlambat:</strong> Struktur Plat Lt 1-5 deviasi -8.00%.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Avatar -->
+        <div class="w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs shadow-sm">
+          AD
+        </div>
+      </div>
+    </header>
+
+    <!-- BANNER INFO PROYEK AKTIF -->
+    <div id="project-banner" class="bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 text-white px-4 lg:px-8 py-3 border-b border-blue-950 shadow-inner flex flex-col md:flex-row md:items-center justify-between gap-2 text-xs">
+      <div class="flex items-center gap-2">
+        <span id="banner-code" class="px-2 py-0.5 rounded text-[11px] font-bold bg-blue-500/30 text-blue-200 border border-blue-400/30">PRJ-2026-GD-001</span>
+        <span id="banner-name" class="font-bold tracking-tight text-sm truncate">Pembangunan Gedung RSUD 5 Lantai Rawat Inap</span>
+      </div>
+      <div class="flex flex-wrap items-center gap-4 text-blue-200/90 font-medium">
+        <div class="flex items-center gap-1.5">
+          <i data-lucide="map-pin" class="w-3.5 h-3.5 text-blue-400"></i>
+          <span id="banner-location">Semarang, Jawa Tengah</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <i data-lucide="circle-dollar-sign" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span id="banner-value">Rp 45.000.000.000</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <i data-lucide="calendar" class="w-3.5 h-3.5 text-amber-400"></i>
+          <span id="banner-dates">15 Jan 2026 s/d 30 Nov 2026</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN BODY CONTAINER -->
+    <main class="flex-1 p-4 lg:p-8 space-y-6">
+
+      <!-- ==================== VIEW 1: DASHBOARD UTAMA ==================== -->
+      <section id="view-dashboard" class="view-panel space-y-6">
+        <!-- 5 KPI Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase">
+              <span>Total Proyek</span>
+              <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center"><i data-lucide="building" class="w-4 h-4"></i></div>
+            </div>
+            <div id="stat-total-projects" class="text-2xl font-black text-slate-900 mt-2">3 Proyek</div>
+            <div class="text-[11px] text-emerald-600 font-semibold mt-1">3 Sedang Berjalan Aktif</div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase">
+              <span>Progres Aktual</span>
+              <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center"><i data-lucide="trending-up" class="w-4 h-4"></i></div>
+            </div>
+            <div id="stat-actual-progress" class="text-2xl font-black text-slate-900 mt-2">68.50%</div>
+            <div id="stat-variance" class="text-[11px] font-bold mt-1 text-rose-600">Deviasi: -3.80% (Terlambat)</div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase">
+              <span>Realisasi Biaya</span>
+              <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><i data-lucide="wallet" class="w-4 h-4"></i></div>
+            </div>
+            <div id="stat-spent-cost" class="text-2xl font-black text-slate-900 mt-2">Rp 27,8 M</div>
+            <div id="stat-budget-percent" class="text-[11px] text-slate-500 font-medium mt-1">67.0% dari Anggaran Rencana</div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase">
+              <span>Pekerjaan Kritis</span>
+              <div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center"><i data-lucide="clock" class="w-4 h-4"></i></div>
+            </div>
+            <div id="stat-delayed-items" class="text-2xl font-black text-rose-600 mt-2">1 Item</div>
+            <div class="text-[11px] text-slate-500 mt-1">Memerlukan percepatan fisik</div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase">
+              <span>Kendala & K3</span>
+              <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center"><i data-lucide="shield-alert" class="w-4 h-4"></i></div>
+            </div>
+            <div id="stat-open-issues" class="text-2xl font-black text-amber-600 mt-2">3 Isu</div>
+            <div class="text-[11px] text-slate-500 mt-1">Dalam proses penanganan</div>
+          </div>
+        </div>
+
+        <!-- Grafik Kurva S & Distribusi Biaya -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Kurva S Canvas -->
+          <div class="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-bold text-slate-900 text-base">Kurva S Monitoring Progres Proyek</h3>
+                <p class="text-xs text-slate-500">Perbandingan kumulatif progres rencana (baseline) vs aktual</p>
+              </div>
+              <div class="flex items-center gap-3 text-xs font-semibold">
+                <span class="flex items-center gap-1.5 text-blue-600"><span class="w-3 h-1 bg-blue-600 rounded"></span> Rencana</span>
+                <span class="flex items-center gap-1.5 text-emerald-600"><span class="w-3 h-1 bg-emerald-500 rounded"></span> Aktual</span>
+              </div>
+            </div>
+            <div class="h-64 relative">
+              <canvas id="sCurveChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Pie Biaya Canvas -->
+          <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
+            <div>
+              <h3 class="font-bold text-slate-900 text-base">Distribusi Biaya Aktual</h3>
+              <p class="text-xs text-slate-500 mb-2">Realisasi per kategori pengeluaran</p>
+              <div class="h-48 relative flex items-center justify-center">
+                <canvas id="costDoughnutChart"></canvas>
+              </div>
+            </div>
+            <div id="cost-category-legend" class="space-y-1.5 mt-2 text-xs">
+              <!-- Diisi via JavaScript -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabel Pekerjaan Kritis & Aktivitas Terbaru -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-bold text-slate-900 text-base">Pekerjaan yang Perlu Perhatian Khusus</h3>
+              <button onclick="switchView('progres')" class="text-xs text-blue-600 hover:underline font-semibold">Lihat Seluruh WBS →</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                  <tr>
+                    <th class="py-2.5 px-3">Kode & Pekerjaan</th>
+                    <th class="py-2.5 px-2 text-center">Rencana</th>
+                    <th class="py-2.5 px-2 text-center">Aktual</th>
+                    <th class="py-2.5 px-2 text-center">Deviasi</th>
+                    <th class="py-2.5 px-3">Target Selesai</th>
+                    <th class="py-2.5 px-3">Status</th>
+                    <th class="py-2.5 px-3">PIC</th>
+                  </tr>
+                </thead>
+                <tbody id="table-critical-tasks" class="divide-y divide-slate-100">
+                  <!-- Diisi via JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Aktivitas Terbaru -->
+          <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs">
+            <h3 class="font-bold text-slate-900 text-base mb-4 flex items-center justify-between">
+              <span>Aktivitas Lapangan Terkini</span>
+              <i data-lucide="activity" class="w-4 h-4 text-slate-400"></i>
+            </h3>
+            <div id="recent-activities-list" class="space-y-3.5 text-xs">
+              <!-- Diisi via JavaScript -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 2: DATA PROYEK ==================== -->
+      <section id="view-proyek" class="view-panel hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900">Data Induk Proyek Konstruksi</h2>
+            <p class="text-xs text-slate-500">Master kontrak, durasi pelaksanaan, konsultan pengawas, dan kontraktor</p>
+          </div>
+          <button onclick="openModal('modal-tambah-proyek')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow flex items-center gap-2">
+            <i data-lucide="plus" class="w-4 h-4"></i> Tambah Proyek Baru
+          </button>
+        </div>
+
+        <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Diisi via JavaScript -->
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 3: MONITORING PROGRES (WBS) ==================== -->
+      <section id="view-progres" class="view-panel hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900">Monitoring Progres Fisik (WBS & Bobot)</h2>
+            <p class="text-xs text-slate-500">Perhitungan progres tertimbang otomatis berdasarkan volume kumulatif lapangan</p>
+          </div>
+          <button onclick="openInputProgressModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow flex items-center gap-2">
+            <i data-lucide="plus" class="w-4 h-4"></i> + Input Progres Lapangan
+          </button>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                <tr>
+                  <th class="py-3 px-4">Kode & Pekerjaan</th>
+                  <th class="py-3 px-3">Kelompok</th>
+                  <th class="py-3 px-3 text-right">Vol Rencana</th>
+                  <th class="py-3 px-3 text-right">Vol Realisasi</th>
+                  <th class="py-3 px-3 text-center">Bobot</th>
+                  <th class="py-3 px-3 text-center">Rencana</th>
+                  <th class="py-3 px-3 text-center">Aktual</th>
+                  <th class="py-3 px-3">Status</th>
+                  <th class="py-3 px-4 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="wbs-table-body" class="divide-y divide-slate-100">
+                <!-- Diisi via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 4: JADWAL & GANTT ==================== -->
+      <section id="view-jadwal" class="view-panel hidden space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Jadwal Pelaksanaan & Gantt Chart</h2>
+          <p class="text-xs text-slate-500">Visualisasi timeline, ketergantungan aktivitas, dan Jalur Kritis (Critical Path)</p>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs overflow-x-auto">
+          <div class="min-w-[700px] space-y-4" id="gantt-chart-container">
+            <!-- Diisi via JavaScript -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 5: ANGGARAN & BIAYA ==================== -->
+      <section id="view-anggaran" class="view-panel hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900">Pengendalian Anggaran & Realisasi Biaya</h2>
+            <p class="text-xs text-slate-500">Pencatatan cashflow pengeluaran dan Analisis Nilai Hasil (EVM)</p>
+          </div>
+          <button onclick="openModal('modal-tambah-transaksi')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow flex items-center gap-2">
+            <i data-lucide="plus" class="w-4 h-4"></i> Catat Transaksi Pengeluaran
+          </button>
+        </div>
+
+        <!-- EVM Banner -->
+        <div class="bg-gradient-to-r from-slate-900 to-blue-950 text-white rounded-2xl p-6 border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs">
+          <div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/30 text-blue-200">Earned Value Management (EVM)</span>
+            <h3 class="text-base font-bold mt-1">Indeks Kinerja Biaya (CPI) & Jadwal (SPI)</h3>
+            <p class="text-slate-400 mt-0.5">Analisis efisiensi biaya dan deviasi kecepatan pekerjaan konstruksi</p>
+          </div>
+          <div class="flex gap-4">
+            <div class="p-3 bg-white/10 rounded-xl text-center">
+              <span class="text-[10px] text-slate-300 block">Cost Index (CPI)</span>
+              <span id="evm-cpi" class="text-lg font-black text-emerald-400">1.02</span>
+              <span class="text-[10px] text-emerald-300 block">Efisien Biaya</span>
+            </div>
+            <div class="p-3 bg-white/10 rounded-xl text-center">
+              <span class="text-[10px] text-slate-300 block">Schedule Index (SPI)</span>
+              <span id="evm-spi" class="text-lg font-black text-amber-400">0.96</span>
+              <span class="text-[10px] text-amber-300 block">Sedikit Delay</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabel Transaksi -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                <tr>
+                  <th class="py-3 px-4">No Transaksi</th>
+                  <th class="py-3 px-3">Tanggal</th>
+                  <th class="py-3 px-3">Kategori</th>
+                  <th class="py-3 px-4">Uraian</th>
+                  <th class="py-3 px-3">Penerima/Supplier</th>
+                  <th class="py-3 px-3 text-right">Nominal (Rp)</th>
+                  <th class="py-3 px-3">Status</th>
+                  <th class="py-3 px-4 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="transactions-table-body" class="divide-y divide-slate-100">
+                <!-- Diisi via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 6: MATERIAL & ALAT ==================== -->
+      <section id="view-material" class="view-panel hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900">Material & Peralatan Konstruksi</h2>
+            <p class="text-xs text-slate-500">Monitoring stok gudang, mutasi keluar/masuk, dan utilisasi alat berat</p>
+          </div>
+          <button onclick="openModal('modal-mutasi-material')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow flex items-center gap-2">
+            <i data-lucide="arrow-down-left" class="w-4 h-4"></i> Catat Mutasi Masuk/Keluar
+          </button>
+        </div>
+
+        <!-- Warning Alert Stok Menipis -->
+        <div id="material-alert-box" class="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3 text-xs text-amber-900">
+          <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600 shrink-0 mt-0.5"></i>
+          <div>
+            <span class="font-bold text-sm block">Peringatan: Stok Material di Bawah Batas Minimum!</span>
+            <p class="mt-0.5">Semen Portland PCC sisa 180 sak berada di bawah batas aman (250 sak). Mohon segera ajukan pemesanan restock.</p>
+          </div>
+        </div>
+
+        <!-- Tabel Material -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                <tr>
+                  <th class="py-3 px-4">Kode & Nama Material</th>
+                  <th class="py-3 px-3">Kategori</th>
+                  <th class="py-3 px-3 text-right">Stok Awal</th>
+                  <th class="py-3 px-3 text-right">Batas Min</th>
+                  <th class="py-3 px-3 text-right">Stok Saat Ini</th>
+                  <th class="py-3 px-3">Status</th>
+                  <th class="py-3 px-3">Lokasi Gudang</th>
+                </tr>
+              </thead>
+              <tbody id="materials-table-body" class="divide-y divide-slate-100">
+                <!-- Diisi via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 7: MUTU (QC) & K3 ==================== -->
+      <section id="view-mutu-k3" class="view-panel hidden space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Pengendalian Mutu (QC) & Keselamatan Kerja (K3)</h2>
+          <p class="text-xs text-slate-500">Uji kuat tekan laboratorium SNI, Non-Conformance Report (NCR), dan inspeksi K3 Zero Accident</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- QC Card List -->
+          <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-3">
+            <div class="flex items-center justify-between border-b pb-3">
+              <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                <i data-lucide="file-check-2" class="w-4 h-4 text-blue-600"></i> Inspeksi Pengujian Mutu (QC)
+              </h3>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">2 Uji</span>
+            </div>
+            <div id="qc-list" class="space-y-2.5 text-xs">
+              <!-- Diisi via JavaScript -->
+            </div>
+          </div>
+
+          <!-- K3 Safety Card List -->
+          <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-3">
+            <div class="flex items-center justify-between border-b pb-3">
+              <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                <i data-lucide="shield-alert" class="w-4 h-4 text-rose-600"></i> Laporan Keselamatan Kerja (K3)
+              </h3>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">1 Terbuka</span>
+            </div>
+            <div id="k3-list" class="space-y-2.5 text-xs">
+              <!-- Diisi via JavaScript -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 8: KENDALA & MATRIKS RISIKO ==================== -->
+      <section id="view-kendala-risiko" class="view-panel hidden space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Kendala Lapangan & Matriks Risiko 5x5</h2>
+          <p class="text-xs text-slate-500">Penanganan kendala aktual dan pemetaan kualitatif probabilitas vs dampak risiko</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Log Kendala -->
+          <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-3">
+            <h3 class="font-bold text-slate-900 text-sm border-b pb-2">Daftar Kendala Lapangan Aktual</h3>
+            <div id="issues-list" class="space-y-3 text-xs">
+              <!-- Diisi via JavaScript -->
+            </div>
+          </div>
+
+          <!-- Visual Matriks Risiko 5x5 -->
+          <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-3">
+            <h3 class="font-bold text-slate-900 text-sm border-b pb-2">Matriks Risiko Proyek (Probability vs Impact)</h3>
+            <div class="grid grid-cols-5 gap-1.5 text-center text-[10px] font-bold pt-2">
+              <div class="p-3 bg-rose-500 text-white rounded">5 (Kritis)</div>
+              <div class="p-3 bg-rose-500 text-white rounded">10 (Kritis)</div>
+              <div class="p-3 bg-rose-600 text-white rounded">15 (Tinggi)</div>
+              <div class="p-3 bg-rose-600 text-white rounded">20 (Tinggi)</div>
+              <div class="p-3 bg-rose-700 text-white rounded">25 (Bencana)</div>
+
+              <div class="p-3 bg-amber-400 text-amber-950 rounded">4 (Sedang)</div>
+              <div class="p-3 bg-amber-400 text-amber-950 rounded">8 (Sedang)</div>
+              <div class="p-3 bg-rose-500 text-white rounded">12 (Tinggi)</div>
+              <div class="p-3 bg-rose-600 text-white rounded">16 (Tinggi)</div>
+              <div class="p-3 bg-rose-700 text-white rounded">20 (Tinggi)</div>
+
+              <div class="p-3 bg-emerald-200 text-emerald-900 rounded">3 (Rendah)</div>
+              <div class="p-3 bg-amber-300 text-amber-950 rounded">6 (Sedang)</div>
+              <div class="p-3 bg-amber-400 text-amber-950 rounded">9 (Sedang)</div>
+              <div class="p-3 bg-rose-500 text-white rounded">12 (Tinggi)</div>
+              <div class="p-3 bg-rose-600 text-white rounded">15 (Tinggi)</div>
+
+              <div class="p-3 bg-emerald-100 text-emerald-800 rounded">2 (Rendah)</div>
+              <div class="p-3 bg-emerald-200 text-emerald-900 rounded">4 (Rendah)</div>
+              <div class="p-3 bg-amber-300 text-amber-950 rounded">6 (Sedang)</div>
+              <div class="p-3 bg-amber-400 text-amber-950 rounded">8 (Sedang)</div>
+              <div class="p-3 bg-rose-500 text-white rounded">10 (Kritis)</div>
+
+              <div class="p-3 bg-emerald-50 text-emerald-800 rounded">1 (Rendah)</div>
+              <div class="p-3 bg-emerald-100 text-emerald-800 rounded">2 (Rendah)</div>
+              <div class="p-3 bg-emerald-200 text-emerald-900 rounded">3 (Rendah)</div>
+              <div class="p-3 bg-amber-300 text-amber-950 rounded">4 (Sedang)</div>
+              <div class="p-3 bg-amber-400 text-amber-950 rounded">5 (Sedang)</div>
+            </div>
+            <p class="text-[11px] text-slate-500 italic mt-2">
+              Keterangan: Skor warna merah menandakan risiko kritis yang membutuhkan tindakan mitigasi intensif.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 9: LAPORAN PROYEK ==================== -->
+      <section id="view-laporan" class="view-panel hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900">Laporan Proyek Konstruksi</h2>
+            <p class="text-xs text-slate-500">Pratinjau dokumen resmi Laporan Harian fisik dengan format kop standar teknik sipil</p>
+          </div>
+          <button onclick="window.print()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow flex items-center gap-2">
+            <i data-lucide="printer" class="w-4 h-4"></i> Cetak / Simpan PDF
+          </button>
+        </div>
+
+        <!-- Pratinjau Dokumen Laporan Harian Resmi -->
+        <div id="printable-area" class="bg-white rounded-2xl border border-slate-200 p-8 shadow-md max-w-3xl mx-auto space-y-5 text-xs text-slate-800">
+          <div class="border-b-2 border-slate-900 pb-3 flex justify-between items-end">
+            <div>
+              <span class="text-[10px] font-black text-blue-700 tracking-wider uppercase block">SISTEM MONITORING PROYEK KONSTRUKSI</span>
+              <h2 class="text-lg font-black text-slate-900 uppercase tracking-tight mt-0.5">LAPORAN HARIAN PELAKSANAAN PEKERJAAN</h2>
+              <p class="text-xs text-slate-600">Proyek: <strong id="report-proj-name">Pembangunan Gedung RSUD 5 Lantai</strong></p>
+            </div>
+            <div class="text-right text-[11px] font-mono text-slate-500">
+              No: LH/2026/10-27<br>
+              Tanggal: 27 Oktober 2026
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px]">
+            <div><strong>Cuaca:</strong> Pagi Cerah, Sore Berawan</div>
+            <div><strong>Tenaga Kerja:</strong> 4 Mandor, 28 Tukang, 45 Pekerja, 5 Operator</div>
+          </div>
+
+          <div>
+            <h4 class="font-bold text-slate-900 mb-1">Realisasi Pekerjaan Hari Ini:</h4>
+            <p class="p-3 bg-slate-50 rounded-xl border border-slate-200 leading-relaxed">
+              Fabrikasi pembesian kolom Lt 5, pemasangan bata ringan koridor Lt 3 (volume 85 m2), instalasi conduit pipa kabel listrik, dan persiapan pengecoran plat lantai 5.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <h4 class="font-bold text-slate-900 mb-1">Penerimaan & Pemakaian Material:</h4>
+              <p class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-[11px]">
+                Masuk semen PCC 100 sak, pemakaian besi beton D16 sebanyak 120 batang.
+              </p>
+            </div>
+            <div>
+              <h4 class="font-bold text-slate-900 mb-1">Alat Berat Beroperasi:</h4>
+              <p class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-[11px]">
+                Tower crane aktif 8 jam, genset silent 150 kVA standby normal.
+              </p>
+            </div>
+          </div>
+
+          <div class="pt-8 grid grid-cols-2 text-center text-xs">
+            <div class="space-y-12">
+              <div>Disusun Oleh (Kontraktor):</div>
+              <div class="font-bold underline">Agus Kurniawan, ST (Site Manager)</div>
+            </div>
+            <div class="space-y-12">
+              <div>Disetujui Oleh (Konsultan Pengawas):</div>
+              <div class="font-bold underline">Ir. Ahmad Zaelani (Konsultan)</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 10: PENGGUNA & PENGATURAN ==================== -->
+      <section id="view-pengaturan" class="view-panel hidden space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Pengguna, Hak Akses & Konfigurasi</h2>
+          <p class="text-xs text-slate-500">Pengaturan sistem mandiri, simulasi peran, dan pemulihan data simulasi</p>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+          <h3 class="font-bold text-slate-900 text-sm">Status Deployment & GitHub Pages</h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Aplikasi ini telah dikonversi menjadi format <strong>Single-File Web Standalone</strong> (HTML, CSS Tailwind, dan JavaScript interaktif dalam satu file <code class="px-1.5 py-0.5 bg-slate-100 rounded font-mono text-blue-700">index.html</code>).
+            Format ini secara native didukung penuh oleh <strong>GitHub Pages (Branch main / root)</strong> tanpa perlu build runner tambahan.
+          </p>
+
+          <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+            <div>
+              <h4 class="font-bold text-xs text-slate-900">Reset Data Demo Awal</h4>
+              <p class="text-[11px] text-slate-500">Kembalikan 3 proyek simulasi ke kondisi bersih semula</p>
+            </div>
+            <button onclick="resetDataDemo()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow">
+              Reset Data Demo
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="py-4 px-8 border-t border-slate-200 bg-white/60 text-center text-xs text-slate-500">
+      Sistem Informasi Monitoring Proyek Konstruksi &copy; 2026 — Format Standalone GitHub Pages
+    </footer>
+  </div>
+
+  <!-- ==================== MODAL: INPUT PROGRES ==================== -->
+  <div id="modal-input-progres" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 text-xs">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="font-bold text-slate-900 text-sm">Input Progres Lapangan</h3>
+        <button onclick="closeModal('modal-input-progres')" class="text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block font-semibold mb-1">Pilih Item Pekerjaan:</label>
+          <select id="modal-progres-task-select" class="w-full border rounded-xl p-2 bg-white">
+            <!-- Diisi via JavaScript -->
+          </select>
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">Volume Tambahan Hari/Minggu Ini:</label>
+          <input type="number" id="modal-progres-vol-added" class="w-full border rounded-xl p-2 font-bold text-slate-900" placeholder="Contoh: 45">
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">Catatan Pelaksanaan Lapangan:</label>
+          <textarea id="modal-progres-notes" rows="2" class="w-full border rounded-xl p-2" placeholder="Catatan cuaca atau zona pekerjaan..."></textarea>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t">
+        <button onclick="closeModal('modal-input-progres')" class="px-4 py-2 bg-slate-100 rounded-xl font-semibold">Batal</button>
+        <button onclick="saveProgressInput()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold">Simpan Progres</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+  <script>
+    // 1. DATA SIMULASI PROYEK & WBS
+    const defaultData = {
+      projects: [
+        {
+          id: 'proj-01',
+          code: 'PRJ-2026-GD-001',
+          name: 'Pembangunan Gedung RSUD 5 Lantai Rawat Inap',
+          type: 'Gedung',
+          location: 'Semarang, Jawa Tengah',
+          contractValue: 45000000000,
+          plannedBudget: 41500000000,
+          startDate: '2026-01-15',
+          endDate: '2026-11-30',
+          contractor: 'PT Wijaya Konstruksi Utama',
+          supervisor: 'PT Cipta Graha Konsultan',
+          photo: 'https://images.unsplash.com/photo-1541888946425-d0fbb18615f3?auto=format&fit=crop&w=600&q=80',
+          tasks: [
+            { id: 't1', code: 'DIV-01', name: 'Pekerjaan Persiapan & K3', category: 'Persiapan', unit: 'ls', plannedVol: 1, actualVol: 1, weight: 5, plannedProg: 100, actualProg: 100, status: 'Selesai', pic: 'Agus Kurniawan' },
+            { id: 't2', code: 'DIV-02', name: 'Pondasi Bored Pile D-60', category: 'Struktur Bawah', unit: 'titik', plannedVol: 120, actualVol: 120, weight: 18, plannedProg: 100, actualProg: 100, status: 'Selesai', pic: 'Bambang Tri' },
+            { id: 't3', code: 'DIV-03', name: 'Struktur Beton Bertulang Lt 1-5', category: 'Struktur Atas', unit: 'm3', plannedVol: 2850, actualVol: 2280, weight: 35, plannedProg: 88, actualProg: 80, status: 'Terlambat', pic: 'Bambang Tri' },
+            { id: 't4', code: 'DIV-04', name: 'Pasangan Dinding, Plesteran & Kusen', category: 'Arsitektur', unit: 'm2', plannedVol: 6400, actualVol: 3200, weight: 20, plannedProg: 55, actualProg: 50, status: 'Sedang Berjalan', pic: 'Roni Saputra' },
+            { id: 't5', code: 'DIV-05', name: 'Instalasi MEP & Gas Medis', category: 'MEP', unit: 'ls', plannedVol: 1, actualVol: 0.42, weight: 15, plannedProg: 45, actualProg: 42, status: 'Sedang Berjalan', pic: 'Deni Firdaus' },
+            { id: 't6', code: 'DIV-06', name: 'Pekerjaan Landscape & Parkir', category: 'Eksterior', unit: 'm2', plannedVol: 3200, actualVol: 640, weight: 7, plannedProg: 25, actualProg: 20, status: 'Sedang Berjalan', pic: 'Agus Kurniawan' }
+          ],
+          transactions: [
+            { id: 'tx1', code: 'TRX-091', date: '2026-09-10', category: 'Material', desc: 'Ready Mix K-350 Plat Lt 4', recipient: 'PT Varia Usaha Beton', amount: 320000000, status: 'Terealisasi' },
+            { id: 'tx2', code: 'TRX-092', date: '2026-09-18', category: 'Tenaga Kerja', desc: 'Upah Tukang & Mandor Periode Sept', recipient: 'Mandor Sutrisno', amount: 145000000, status: 'Terealisasi' },
+            { id: 'tx3', code: 'TRX-101', date: '2026-10-02', category: 'Peralatan', desc: 'Sewa Tower Crane Potain 50M', recipient: 'PT Aneka Alat Berat', amount: 85000000, status: 'Terealisasi' },
+            { id: 'tx4', code: 'TRX-102', date: '2026-10-12', category: 'Subkontraktor', desc: 'Termin I Pipa Gas Medis RSUD', recipient: 'PT Medika Enjiniring', amount: 450000000, status: 'Terealisasi' }
+          ],
+          materials: [
+            { code: 'MAT-SMN-01', name: 'Semen Portland Komposit 50Kg', category: 'Semen & Pasir', unit: 'sak', initial: 800, min: 250, current: 180, status: 'Menipis', loc: 'Gudang Utama A' },
+            { code: 'MAT-BSI-02', name: 'Besi Beton Ulir BJTD-40 D16', category: 'Besi & Baja', unit: 'btg', initial: 1200, min: 300, current: 640, status: 'Tersedia', loc: 'Stockyard Fabrikasi' },
+            { code: 'MAT-BTA-03', name: 'Bata Ringan Hebel AAC 10cm', category: 'Batu & Bata', unit: 'm3', initial: 300, min: 60, current: 140, status: 'Tersedia', loc: 'Drop Zone Lt 1' }
+          ]
+        },
+        {
+          id: 'proj-02',
+          code: 'PRJ-2026-JL-002',
+          name: 'Preservasi dan Pelebaran Jalan Ruas Utama 12 KM',
+          type: 'Jalan & Jembatan',
+          location: 'Pantura KM 42 - 54, Batang',
+          contractValue: 28500000000,
+          plannedBudget: 26200000000,
+          startDate: '2026-02-01',
+          endDate: '2026-10-15',
+          contractor: 'PT Adhi Mandiri Nusantara',
+          supervisor: 'PT Multi Rekayasa Spasial',
+          photo: 'https://images.unsplash.com/photo-1584463699026-66f81e624dfd?auto=format&fit=crop&w=600&q=80',
+          tasks: [
+            { id: 't21', code: 'DIV-01', name: 'Umum & Manajemen K3 Lalu Lintas', category: 'Umum', unit: 'ls', plannedVol: 1, actualVol: 0.95, weight: 8, plannedProg: 95, actualProg: 95, status: 'Sedang Berjalan', pic: 'Rahmat Hidayat' },
+            { id: 't22', code: 'DIV-02', name: 'Saluran Drainase U-Ditch Samping', category: 'Drainase', unit: 'm', plannedVol: 12000, actualVol: 11400, weight: 14, plannedProg: 98, actualProg: 95, status: 'Sedang Berjalan', pic: 'Slamet Riyadi' },
+            { id: 't23', code: 'DIV-03', name: 'Galian Tanah Pelebaran Badan Jalan', category: 'Tanah', unit: 'm3', plannedVol: 34000, actualVol: 34000, weight: 18, plannedProg: 100, actualProg: 100, status: 'Selesai', pic: 'Slamet Riyadi' },
+            { id: 't24', code: 'DIV-04', name: 'Pondasi Agregat Kelas A tebal 20cm', category: 'Agregat', unit: 'm3', plannedVol: 14400, actualVol: 13680, weight: 22, plannedProg: 100, actualProg: 95, status: 'Sedang Berjalan', pic: 'Rahmat Hidayat' },
+            { id: 't25', code: 'DIV-05', name: 'Perkerasan Aspal AC-BC & AC-WC 10cm', category: 'Aspal', unit: 'ton', plannedVol: 16800, actualVol: 14280, weight: 30, plannedProg: 90, actualProg: 85, status: 'Sedang Berjalan', pic: 'Arif Wibowo' },
+            { id: 't26', code: 'DIV-06', name: 'Marka Thermoplastik & Rambu', category: 'Perlengkapan', unit: 'm2', plannedVol: 4800, actualVol: 2880, weight: 8, plannedProg: 70, actualProg: 60, status: 'Sedang Berjalan', pic: 'Arif Wibowo' }
+          ],
+          transactions: [
+            { id: 'tx21', code: 'TRX-201', date: '2026-10-15', category: 'Material', desc: 'Pasokan Aspal Hotmix AC-WC 850 Ton', recipient: 'PT Sarana Aspal', amount: 1190000000, status: 'Terealisasi' }
+          ],
+          materials: [
+            { code: 'MAT-ASP-01', name: 'Aspal Panas AC-WC Hotmix', category: 'Aspal', unit: 'ton', initial: 1000, min: 200, current: 450, status: 'Tersedia', loc: 'AMP Batang' }
+          ]
+        },
+        {
+          id: 'proj-03',
+          code: 'PRJ-2026-DR-003',
+          name: 'Normalisasi & Saluran Drainase Primer Perkotaan',
+          type: 'Drainase & Irigasi',
+          location: 'DAS Kali Beringin, Semarang',
+          contractValue: 12000000000,
+          plannedBudget: 10800000000,
+          startDate: '2026-03-01',
+          endDate: '2026-09-30',
+          contractor: 'PT Karya Mitra Abadi',
+          supervisor: 'PT Delta Prisma Konsultan',
+          photo: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=600&q=80',
+          tasks: [
+            { id: 't31', code: 'DIV-01', name: 'Mobilisasi, Demobilisasi & K3', category: 'Persiapan', unit: 'ls', plannedVol: 1, actualVol: 1, weight: 6, plannedProg: 100, actualProg: 100, status: 'Selesai', pic: 'Eko Prasetyo' },
+            { id: 't32', code: 'DIV-02', name: 'Pengerukan Lumpur Saluran', category: 'Galian', unit: 'm3', plannedVol: 22000, actualVol: 22000, weight: 24, plannedProg: 100, actualProg: 100, status: 'Selesai', pic: 'Yulianto' },
+            { id: 't33', code: 'DIV-03', name: 'Sheet Pile CCSP W-325 Perkuatan', category: 'Struktur', unit: 'titik', plannedVol: 650, actualVol: 618, weight: 38, plannedProg: 100, actualProg: 95, status: 'Sedang Berjalan', pic: 'Yulianto' },
+            { id: 't34', code: 'DIV-04', name: 'Caping Beam & Parapet Beton', category: 'Struktur', unit: 'm3', plannedVol: 840, actualVol: 672, weight: 22, plannedProg: 90, actualProg: 80, status: 'Sedang Berjalan', pic: 'Eko Prasetyo' },
+            { id: 't35', code: 'DIV-05', name: 'Jalan Inspeksi Paving & Pagar', category: 'Finishing', unit: 'm', plannedVol: 1800, actualVol: 1260, weight: 10, plannedProg: 75, actualProg: 70, status: 'Sedang Berjalan', pic: 'Eko Prasetyo' }
+          ],
+          transactions: [
+            { id: 'tx31', code: 'TRX-301', date: '2026-08-10', category: 'Material', desc: 'Pengadaan Sheet Pile Beton W-325', recipient: 'PT Wijaya Karya Beton', amount: 820000000, status: 'Terealisasi' }
+          ],
+          materials: [
+            { code: 'MAT-CCSP-01', name: 'Corrugated Sheet Pile W-325', category: 'Precast', unit: 'btg', initial: 650, min: 50, current: 82, status: 'Tersedia', loc: 'Bantaran Sungai' }
+          ]
+        }
+      ]
+    };
+
+    // State Aplikasi
+    let appData = JSON.parse(localStorage.getItem('cm_standalone_data_v1')) || defaultData;
+    let selectedProjectId = 'proj-01';
+    let currentUserRole = 'Admin';
+    let sCurveChartInstance = null;
+    let costChartInstance = null;
+
+    function saveAppData() {
+      localStorage.setItem('cm_standalone_data_v1', JSON.stringify(appData));
+    }
+
+    function formatRupiah(num) {
+      return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num);
+    }
+
+    function formatTanggal(str) {
+      if (!str) return '-';
+      const d = new Date(str);
+      return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    // 2. NAVIGASI ANTARHALAMAN
+    function switchView(viewId) {
+      document.querySelectorAll('.view-panel').forEach(el => el.classList.add('hidden'));
+      const activePanel = document.getElementById('view-' + viewId);
+      if (activePanel) activePanel.classList.remove('hidden');
+
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active', 'bg-blue-600', 'text-white', 'shadow-md');
+        btn.classList.add('text-slate-400');
+      });
+
+      const currentNav = document.getElementById('nav-' + viewId);
+      if (currentNav) {
+        currentNav.classList.add('active', 'bg-blue-600', 'text-white', 'shadow-md');
+        currentNav.classList.remove('text-slate-400');
+      }
+
+      // Ganti judul halaman
+      const titles = {
+        'dashboard': 'Dashboard Utama',
+        'proyek': 'Data Induk Proyek Konstruksi',
+        'progres': 'Monitoring Progres Pekerjaan (WBS)',
+        'jadwal': 'Jadwal Pelaksanaan & Gantt Chart',
+        'anggaran': 'Pengendalian Anggaran & Biaya (EVM)',
+        'material': 'Material & Peralatan Konstruksi',
+        'mutu-k3': 'Pengendalian Mutu (QC) & K3',
+        'kendala-risiko': 'Kendala Lapangan & Matriks Risiko',
+        'laporan': 'Laporan Proyek Konstruksi',
+        'pengaturan': 'Pengguna, Hak Akses & Konfigurasi'
+      };
+      document.getElementById('page-title').innerText = titles[viewId] || 'Dashboard Monitoring Proyek';
+
+      // Re-render konten view aktif
+      renderAll();
+      if (window.innerWidth < 1024) toggleMobileSidebar();
+    }
+
+    function toggleMobileSidebar() {
+      const sb = document.getElementById('sidebar');
+      const ov = document.getElementById('sidebar-overlay');
+      if (sb.classList.contains('-translate-x-full')) {
+        sb.classList.remove('-translate-x-full');
+        ov.classList.remove('hidden');
+      } else {
+        sb.classList.add('-translate-x-full');
+        ov.classList.add('hidden');
+      }
+    }
+
+    function toggleNotifPopup() {
+      const p = document.getElementById('notif-popup');
+      p.classList.toggle('hidden');
+    }
+
+    function changeSelectedProject(pId) {
+      selectedProjectId = pId;
+      renderAll();
+    }
+
+    function changeUserRole(role) {
+      currentUserRole = role;
+      alert(`Peran diubah menjadi: ${role}. Batasan akses tombol dan modul aktif sesuai kewenangan.`);
+    }
+
+    // 3. RENDER DATA UTAMA
+    function getActiveProject() {
+      if (selectedProjectId === 'all') return null;
+      return appData.projects.find(p => p.id === selectedProjectId) || appData.projects[0];
+    }
+
+    function renderAll() {
+      const currentProj = getActiveProject();
+
+      // Render Banner Header
+      if (currentProj) {
+        document.getElementById('banner-code').innerText = currentProj.code;
+        document.getElementById('banner-name').innerText = currentProj.name;
+        document.getElementById('banner-location').innerText = currentProj.location;
+        document.getElementById('banner-value').innerText = formatRupiah(currentProj.contractValue);
+        document.getElementById('banner-dates').innerText = `${formatTanggal(currentProj.startDate)} s/d ${formatTanggal(currentProj.endDate)}`;
+        document.getElementById('report-proj-name').innerText = currentProj.name;
+      } else {
+        document.getElementById('banner-code').innerText = 'SEMUA PROYEK';
+        document.getElementById('banner-name').innerText = 'Ringkasan Konsolidasi 3 Proyek Konstruksi';
+        document.getElementById('banner-location').innerText = 'Jawa Tengah';
+        document.getElementById('banner-value').innerText = formatRupiah(85500000000);
+        document.getElementById('banner-dates').innerText = 'Tahun Anggaran 2026';
+        document.getElementById('report-proj-name').innerText = 'Seluruh Proyek';
+      }
+
+      // Hitung KPI
+      let tasks = [];
+      let transactions = [];
+      let materials = [];
+
+      if (currentProj) {
+        tasks = currentProj.tasks;
+        transactions = currentProj.transactions;
+        materials = currentProj.materials;
+      } else {
+        appData.projects.forEach(p => {
+          tasks.push(...p.tasks);
+          transactions.push(...p.transactions);
+          materials.push(...p.materials);
+        });
+      }
+
+      // Hitung Progres Tertimbang
+      let totalActual = 0;
+      let totalPlanned = 0;
+      let totalWeight = 0;
+      tasks.forEach(t => {
+        totalWeight += t.weight;
+        totalActual += (t.weight * t.actualProg) / 100;
+        totalPlanned += (t.weight * t.plannedProg) / 100;
+      });
+
+      const actualPercent = totalWeight > 0 ? (totalActual / totalWeight) * 100 : 0;
+      const plannedPercent = totalWeight > 0 ? (totalPlanned / totalWeight) * 100 : 0;
+      const diff = actualPercent - plannedPercent;
+
+      document.getElementById('stat-actual-progress').innerText = actualPercent.toFixed(1) + '%';
+      const varEl = document.getElementById('stat-variance');
+      varEl.innerText = `Deviasi: ${diff >= 0 ? '+' : ''}${diff.toFixed(1)}% (${diff >= 0 ? 'Mendahului' : 'Terlambat'})`;
+      varEl.className = `text-[11px] font-bold mt-1 ${diff >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+
+      // Hitung Biaya
+      const totalSpent = transactions.reduce((acc, t) => acc + t.amount, 0);
+      document.getElementById('stat-spent-cost').innerText = formatRupiah(totalSpent);
+
+      const delayedCount = tasks.filter(t => t.status === 'Terlambat').length;
+      document.getElementById('stat-delayed-items').innerText = `${delayedCount} Item`;
+
+      // Render Grafik Kurva S & Biaya
+      renderCharts(plannedPercent, actualPercent);
+
+      // Render Tabel Kritis
+      renderCriticalTasksTable(tasks);
+
+      // Render Aktivitas
+      renderActivities();
+
+      // Render View Data Proyek
+      renderProjectsGrid();
+
+      // Render View WBS
+      renderWbsTable(tasks);
+
+      // Render View Jadwal Gantt
+      renderGanttChart(tasks);
+
+      // Render View Anggaran
+      renderTransactionsTable(transactions);
+
+      // Render View Material
+      renderMaterialsTable(materials);
+
+      // Render Mutu & K3 & Kendala
+      renderQualityAndSafety();
+      renderIssuesList();
+
+      // Refresh ikon Lucide
+      lucide.createIcons();
+    }
+
+    // 4. CHART RENDERING
+    function renderCharts(planned, actual) {
+      // Line Chart Kurva S
+      const ctxSCurve = document.getElementById('sCurveChart').getContext('2d');
+      if (sCurveChartInstance) sCurveChartInstance.destroy();
+
+      sCurveChartInstance = new Chart(ctxSCurve, {
+        type: 'line',
+        data: {
+          labels: ['Bln 1', 'Bln 2', 'Bln 3', 'Bln 4', 'Bln 5', 'Bln 6', 'Bln 7', 'Target'],
+          datasets: [
+            {
+              label: 'Rencana',
+              data: [10, 22, 38, 55, 72, 88, 96, 100],
+              borderColor: '#3b82f6',
+              borderDash: [5, 5],
+              tension: 0.3
+            },
+            {
+              label: 'Aktual',
+              data: [10, 24, 37, 50, actual],
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              fill: true,
+              tension: 0.3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { min: 0, max: 100, ticks: { callback: v => v + '%' } }
+          }
+        }
+      });
+
+      // Doughnut Chart Biaya
+      const ctxCost = document.getElementById('costDoughnutChart').getContext('2d');
+      if (costChartInstance) costChartInstance.destroy();
+
+      costChartInstance = new Chart(ctxCost, {
+        type: 'doughnut',
+        data: {
+          labels: ['Material', 'Tenaga Kerja', 'Peralatan', 'Subkon'],
+          datasets: [{
+            data: [45, 25, 15, 15],
+            backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } }
+        }
+      });
+
+      document.getElementById('cost-category-legend').innerHTML = `
+        <div class="flex justify-between"><span><span class="inline-block w-2 h-2 rounded-full bg-blue-600 mr-1.5"></span>Material:</span><strong>45%</strong></div>
+        <div class="flex justify-between"><span><span class="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span>Upah Tenaga:</span><strong>25%</strong></div>
+        <div class="flex justify-between"><span><span class="inline-block w-2 h-2 rounded-full bg-amber-500 mr-1.5"></span>Peralatan:</span><strong>15%</strong></div>
+        <div class="flex justify-between"><span><span class="inline-block w-2 h-2 rounded-full bg-purple-500 mr-1.5"></span>Subkontraktor:</span><strong>15%</strong></div>
+      `;
+    }
+
+    function renderCriticalTasksTable(tasks) {
+      const tbody = document.getElementById('table-critical-tasks');
+      tbody.innerHTML = '';
+      const critical = tasks.filter(t => t.actualProg < t.plannedProg || t.status === 'Terlambat').slice(0, 4);
+
+      if (critical.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400">Seluruh pekerjaan berjalan sesuai rencana.</td></tr>';
+        return;
+      }
+
+      critical.forEach(t => {
+        const diff = t.actualProg - t.plannedProg;
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="py-2.5 px-3 font-semibold text-slate-800">${t.name}<div class="text-[10px] text-slate-400 font-mono">${t.code} • Bobot: ${t.weight}%</div></td>
+            <td class="py-2.5 px-2 text-center text-slate-600">${t.plannedProg}%</td>
+            <td class="py-2.5 px-2 text-center font-bold text-slate-900">${t.actualProg}%</td>
+            <td class="py-2.5 px-2 text-center font-bold text-rose-600">${diff.toFixed(1)}%</td>
+            <td class="py-2.5 px-3 text-slate-500">30 Nov 2026</td>
+            <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700">${t.status}</span></td>
+            <td class="py-2.5 px-3 text-slate-600">${t.pic}</td>
+          </tr>
+        `;
+      });
+    }
+
+    function renderActivities() {
+      const list = [
+        { title: 'Laporan Harian Dicatat', desc: 'Pengecoran plat Lt 4 zona B selesai 45 m3.', time: '2 jam lalu' },
+        { title: 'Material Semen Masuk', desc: '100 sak Semen PCC diterima dari distributor.', time: '5 jam lalu' },
+        { title: 'Inspeksi K3 Void Lift', desc: 'Barikade pengaman void lift lantai 4 dipasang.', time: 'Kemarin' },
+        { title: 'Uji Kuat Tekan Beton', desc: 'Silinder beton 28 hari mencapai 362 kg/cm2 (Lulus).', time: '2 hari lalu' }
+      ];
+
+      const c = document.getElementById('recent-activities-list');
+      c.innerHTML = '';
+      list.forEach(item => {
+        c.innerHTML += `
+          <div class="border-l-2 border-blue-500 pl-3 py-0.5">
+            <div class="flex justify-between items-center"><strong class="text-slate-900">${item.title}</strong><span class="text-[10px] text-slate-400">${item.time}</span></div>
+            <p class="text-slate-600 text-[11px] mt-0.5">${item.desc}</p>
+          </div>
+        `;
+      });
+    }
+
+    function renderProjectsGrid() {
+      const c = document.getElementById('projects-grid');
+      c.innerHTML = '';
+      appData.projects.forEach(p => {
+        c.innerHTML += `
+          <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition">
+            <img src="${p.photo}" class="w-full h-40 object-cover">
+            <div class="p-4 space-y-2">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">${p.type}</span>
+              <h3 class="font-bold text-slate-900 text-sm">${p.name}</h3>
+              <div class="text-[11px] text-slate-500">${p.location}</div>
+              <div class="pt-2 border-t flex justify-between items-center text-xs">
+                <span>Nilai Kontrak:</span>
+                <strong class="text-emerald-600">${formatRupiah(p.contractValue)}</strong>
+              </div>
+              <button onclick="changeSelectedProject('${p.id}'); switchView('dashboard');" class="w-full mt-2 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white rounded-xl text-xs font-semibold transition">
+                Pilih & Kelola Proyek Ini
+              </button>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function renderWbsTable(tasks) {
+      const tbody = document.getElementById('wbs-table-body');
+      tbody.innerHTML = '';
+      tasks.forEach(t => {
+        const badgeColor = t.status === 'Selesai' ? 'bg-emerald-100 text-emerald-800' : t.status === 'Terlambat' ? 'bg-rose-100 text-rose-800' : 'bg-blue-100 text-blue-800';
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="py-3 px-4 font-bold text-slate-900">${t.name}<div class="text-[10px] text-slate-400 font-mono">${t.code} • PIC: ${t.pic}</div></td>
+            <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-slate-100 text-[11px]">${t.category}</span></td>
+            <td class="py-3 px-3 text-right font-medium">${t.plannedVol} ${t.unit}</td>
+            <td class="py-3 px-3 text-right font-bold">${t.actualVol} ${t.unit}</td>
+            <td class="py-3 px-3 text-center font-bold text-blue-700">${t.weight}%</td>
+            <td class="py-3 px-3 text-center text-slate-500">${t.plannedProg}%</td>
+            <td class="py-3 px-3 text-center font-extrabold text-slate-900">${t.actualProg}%</td>
+            <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${badgeColor}">${t.status}</span></td>
+            <td class="py-3 px-4 text-center">
+              <button onclick="openInputProgressModal('${t.id}')" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-semibold">
+                + Input Progres
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function renderGanttChart(tasks) {
+      const c = document.getElementById('gantt-chart-container');
+      c.innerHTML = '<div class="font-bold text-slate-800 mb-3 text-xs flex justify-between"><span>Nama Aktivitas WBS</span><span>Timeline Durasi Pekerjaan</span></div>';
+      tasks.forEach((t, i) => {
+        const color = t.status === 'Selesai' ? 'bg-emerald-500' : t.status === 'Terlambat' ? 'bg-rose-500' : 'bg-blue-600';
+        const width = Math.min(Math.max(t.actualProg, 10), 100);
+        c.innerHTML += `
+          <div class="flex items-center gap-3 text-xs py-1">
+            <div class="w-64 truncate font-semibold text-slate-800">${t.name}</div>
+            <div class="flex-1 bg-slate-100 h-6 rounded-lg overflow-hidden p-0.5">
+              <div class="${color} h-full rounded text-white text-[10px] font-bold flex items-center px-2" style="width: ${width}%">
+                ${t.actualProg}%
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function renderTransactionsTable(transactions) {
+      const tbody = document.getElementById('transactions-table-body');
+      tbody.innerHTML = '';
+      transactions.forEach(tx => {
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="py-3 px-4 font-mono font-bold">${tx.code}</td>
+            <td class="py-3 px-3">${formatTanggal(tx.date)}</td>
+            <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-slate-100 text-[11px]">${tx.category}</span></td>
+            <td class="py-3 px-4 font-medium">${tx.desc}</td>
+            <td class="py-3 px-3 text-slate-600">${tx.recipient}</td>
+            <td class="py-3 px-3 text-right font-bold text-slate-900">${formatRupiah(tx.amount)}</td>
+            <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">${tx.status}</span></td>
+            <td class="py-3 px-4 text-center">
+              <span class="text-emerald-600 font-bold text-xs">✓ Lunas</span>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function renderMaterialsTable(materials) {
+      const tbody = document.getElementById('materials-table-body');
+      tbody.innerHTML = '';
+      materials.forEach(m => {
+        const badgeColor = m.status === 'Menipis' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800';
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="py-3 px-4 font-bold">${m.name}<div class="text-[10px] text-slate-400 font-mono">${m.code}</div></td>
+            <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-slate-100 text-[11px]">${m.category}</span></td>
+            <td class="py-3 px-3 text-right font-medium">${m.initial} ${m.unit}</td>
+            <td class="py-3 px-3 text-right text-slate-500">${m.min} ${m.unit}</td>
+            <td class="py-3 px-3 text-right font-black ${m.current <= m.min ? 'text-amber-600' : 'text-slate-900'}">${m.current} ${m.unit}</td>
+            <td class="py-3 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${badgeColor}">${m.status}</span></td>
+            <td class="py-3 px-3 text-slate-600">${m.loc}</td>
+          </tr>
+        `;
+      });
+    }
+
+    function renderQualityAndSafety() {
+      const qc = document.getElementById('qc-list');
+      qc.innerHTML = `
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+          <div class="flex justify-between font-bold text-slate-900"><span>Uji Kuat Tekan Beton Silinder 28 Hari</span><span class="text-emerald-600 font-bold">Lulus</span></div>
+          <div class="text-[11px] text-slate-500 mt-1">Hasil: 362 kg/cm2 (Target SNI: 350 kg/cm2). Pengawas: Ir. Ahmad Zaelani</div>
+        </div>
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+          <div class="flex justify-between font-bold text-slate-900"><span>Pemeriksaan Ketegakan Pasangan Dinding Lt 3</span><span class="text-amber-600 font-bold">Dalam Perbaikan</span></div>
+          <div class="text-[11px] text-slate-500 mt-1">Deviasi 5mm pada shaft lift. Dilakukan plesteran ulang jidar aluminium.</div>
+        </div>
+      `;
+
+      const k3 = document.getElementById('k3-list');
+      k3.innerHTML = `
+        <div class="p-3 bg-rose-50 rounded-xl border border-rose-200 text-rose-950">
+          <div class="flex justify-between font-bold"><span>Lubang Void Lift Belum Diberi Barikade</span><span class="px-1.5 py-0.2 bg-rose-200 rounded text-[10px]">Risiko Tinggi</span></div>
+          <div class="text-[11px] mt-1">Tindakan: Telah dipasang barikade kayu solid tinggi 1.1M & safety net.</div>
+        </div>
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+          <div class="flex justify-between font-bold text-slate-900"><span>Toolbox Meeting: Bekerja di Ketinggian</span><span class="text-emerald-600 font-bold">Selesai</span></div>
+          <div class="text-[11px] text-slate-500 mt-1">Sosialisasi SOP wajib full body harness ganda untuk pengecoran plat Lt 5.</div>
+        </div>
+      `;
+    }
+
+    function renderIssuesList() {
+      const el = document.getElementById('issues-list');
+      el.innerHTML = `
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+          <div class="flex justify-between font-bold text-slate-900"><span>Pasokan Beton Ready Mix Terhambat Cuaca Hujan</span><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">Prioritas Tinggi</span></div>
+          <p class="text-[11px] text-slate-600">Dampak: +5 Hari kerja. Solusi: Penambahan jam lembur shift malam & terpal pelindung.</p>
+        </div>
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+          <div class="flex justify-between font-bold text-slate-900"><span>Stok Semen PCC Menipis di Distributor Kota</span><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">Prioritas Sedang</span></div>
+          <p class="text-[11px] text-slate-600">Dampak: Potensi penundaan plesteran. Solusi: Pengalihan order ke sub-distributor Solo.</p>
+        </div>
+      `;
+    }
+
+    // 5. MODAL FORM HANDLERS
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    function openInputProgressModal(taskId) {
+      const proj = getActiveProject() || appData.projects[0];
+      const select = document.getElementById('modal-progres-task-select');
+      select.innerHTML = '';
+      proj.tasks.forEach(t => {
+        select.innerHTML += `<option value="${t.id}" ${t.id === taskId ? 'selected' : ''}>${t.name} (Realisasi: ${t.actualVol} ${t.unit})</option>`;
+      });
+      openModal('modal-input-progres');
+    }
+
+    function saveProgressInput() {
+      const proj = getActiveProject() || appData.projects[0];
+      const taskId = document.getElementById('modal-progres-task-select').value;
+      const volAdded = Number(document.getElementById('modal-progres-vol-added').value) || 0;
+
+      if (volAdded <= 0) {
+        alert('Masukkan volume tambahan yang valid!');
+        return;
+      }
+
+      const task = proj.tasks.find(t => t.id === taskId);
+      if (task) {
+        task.actualVol += volAdded;
+        task.actualProg = Math.min(Math.round((task.actualVol / task.plannedVol) * 100), 100);
+        if (task.actualProg >= 100) task.status = 'Selesai';
+        saveAppData();
+        closeModal('modal-input-progres');
+        renderAll();
+        alert(`Progres berhasil ditambahkan! Progres ${task.name} kini mencapai ${task.actualProg}%.`);
+      }
+    }
+
+    function resetDataDemo() {
+      if (confirm('Pulihkan data aplikasi ke 3 proyek simulasi awal yang bersih?')) {
+        localStorage.removeItem('cm_standalone_data_v1');
+        appData = defaultData;
+        saveAppData();
+        renderAll();
+        alert('Data berhasil dipulihkan!');
+      }
+    }
+
+    // Inisialisasi awal saat window dimuat
+    window.addEventListener('DOMContentLoaded', () => {
+      renderAll();
+    });
+  </script>
+</body>
 </html>
